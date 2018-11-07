@@ -6,7 +6,7 @@ include("file.php");
             $res = mysqli_query($mysqli,"SELECT `pressure`,`time` WHERE `time` > ".$timeSeason.'"');
             $arrW = mysqli_fetch_all($res,MYSQLI_NUM);
             echo $arrW[0];*/
-         //solSLAY();
+         solSLAY();
         function solSLAY()
         {
         	$BMP085 = ReadMassiveData("BMP085", 0, 0);
