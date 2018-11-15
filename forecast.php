@@ -1,13 +1,81 @@
 <?
-//$z_where  Северное = 1 (это наше, если что) или Южное = 2 полушарие
-//$z_baro_top  верхний предел 'погодного окна' (1050.0 гПа для Великобритании)
-//$z_baro_bottom     нижний предел 'погодного окна' (950.0 гПа для Великобритании)
-
-// usage:   forecast = betel_cast( $z_hpa, $z_month, $z_wind, $z_trend [, $z_where] [, $z_baro_top] [, $z_baro_bottom]);
-// $z_hpa - Атмосферное давление в гПа
-// $z_month текущий месяц, от 1 до 12
-// $z_wind текущее направление ветра в английской системе координат типа N, NNW, NW и т.д.
-// $z_trend изменения в атмосферном давлении: 0 = не меняется, 1 = растет, 2 = снижается
+include("math.php");
+function season()
+    {
+        $month = date("n");
+        $season;
+        $firstMonth;
+        if(($month > 0 && $month < 3) || $month == 12)
+            $season = "winter";
+        else if($month > 2 && $month < 6)
+            $season = "spring"; 
+        else if($month > 5 && $month < 9)
+            $season = "summer";
+        else if($month > 8 && $month < 12)
+            $season = "autumn";
+        return $season;
+    }
+function forecastLineTernd($BMP085, $hourPrediction)
+{
+    //$hourPrediction=3;
+    $pow_of_pol=1;
+    $hourData=2;
+    //$BMP085 = ReadMassiveData("BMP085", 0, 0);
+    $nameWeather = Array("Ясно", "Частично облачно", "Облачно", "Дождь");
+    $trendCoeffs = pressureTrendFunc($pow_of_pol,$hourData,$BMP085);//коэффициенты полинома, наденные МНК
+    $velocity=$trendCoeffs[0];
+    $trendPressure;
+    if($velocity > 0.18)
+    {   
+        $trendPressure = "up";
+    } else if($velocity < -0.18)
+    {
+        $trendPressure = "down";
+    } else {
+        $trendPressure = "stable";
+    }
+    $Ph=0;
+    for($j=0;$j<$pow_of_pol+1;$j++)
+    {
+        $Ph+=$trendCoeffs[$j]*($hourPrediction+$hourData)**($pow_of_pol-$j);
+        if(round($Ph,1)>700)
+        {
+            echo "P=".round($Ph)." h=".round($hourPrediction,2)." v=".round($velocity,4)."<br>";
+        }
+    }
+    $weather = file("PW/".(season())."/".$trendPressure."/".round($Ph).".txt");
+    $typeWeather;
+    $result = count($weather);
+    for($i = 0; $i<$result; $i++)
+        {
+            switch(selectW(trim($weather[$i])))
+            {
+                case 0:
+                    $typeWeather[0]+=1;//ясно
+                break;
+                case 1:
+                    $typeWeather[1]+=1; //Частично облачно
+                break;
+                case 2:
+                    $typeWeather[2]+=1; //обачно
+                break;
+                case 3:
+                    $typeWeather[3]+=1; //дождь
+                    $typeWeather[2]+=1; //обачно
+                    break;
+                case 4:
+                    $typeWeather[3]+=1; //дождь
+                break;
+                /*case 5:
+                    $error.=$Wsorted[$i]." ";
+                break;*/
+                default:
+                break;
+            }
+        }
+    $forecast=array_keys($typeWeather,max($typeWeather));
+    return $nameWeather[$forecast[0]];
+}
 function forecastDB($pressure, $velocity,$T, $H, $timeS)
 {
     $mysqli = new mysqli("127.0.0.1", "root","", "weather");
@@ -260,21 +328,6 @@ $fall_options = Array(25,25,25,25,25,25,25,25,23,23,21,20,17,14,7,3,1,1,1,0,0,0)
     }
     return ($z_output);
 }
-    function season()
-    {
-        $month = date("n");
-        $season;
-        $firstMonth;
-        if(($month > 0 && $month < 3) || $month == 12)
-            $season = "winter";
-        else if($month > 2 && $month < 6)
-            $season = "spring"; 
-        else if($month > 5 && $month < 9)
-            $season = "summer";
-        else if($month > 8 && $month < 12)
-            $season = "autumn";
-        return $season;
-    }
     function createWeatherList()
     {
         $season = season();

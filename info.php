@@ -196,7 +196,8 @@ unset($content1);// удаляет content
         $forecast = myForecast($BMP085[$countBMP085-2], timeData($BMP085, 60*60, 3, 2, 1), $dt/*, $V*/);
 
         echo "<td>".imgForecast($forecast)."</td>";
-        echo "<td>"/*."db: ".$forecastDB[(int)($i/3)-1][0]."<br>"*/.$forecast."</td>";
+        //echo "<td>"/*."db: ".$forecastDB[(int)($i/3)-1][0]."<br>"*/.$forecast."</td>";
+        echo "<td>"."LT: ".forecastLineTernd($BMP085,$dt)."<br>".$forecast."</td>";
         $acc = file("rightForecast/Accuarity$i.txt");
         echo "<td>".$acc[1]."%<br>(обновлено ".((int)((time()-$acc[0])/60))." минут назад)</td>";
         echo "</tr>"; 
